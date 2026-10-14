@@ -77,7 +77,7 @@ Then run the portrait step below, and finish with the report.
 
 ## Step 6: Portrait prompts
 
-Follow `references/portrait-prompts.md`. Fill the look block (face, hair, glasses or facial hair, signature clothing, any prop with text) from what the sources and public images show; keep it descriptive and do not name the person in the prompts. Save to `docs/portraits/<key>-prompts.md` and print the four prompts in chat, each in its own fenced block, plus the three-line workflow and the `cwebp` commands for the finished frames.
+Follow `references/portrait-prompts.md`. Fill the look block (face, hair, glasses or facial hair, signature clothing, any prop with text) from what the sources and public images show; keep it descriptive. The base prompt (Prompt 1) must also say explicitly that the image should look like the person, using their full name; the open, mid, and blink prompts are edits of the base and do not need the name. Save to `docs/portraits/<key>-prompts.md` and print the four prompts in chat, each in its own fenced block, plus the three-line workflow and the `cwebp` commands for the finished frames.
 
 ## Step 7: Report
 

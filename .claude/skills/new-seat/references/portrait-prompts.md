@@ -6,7 +6,7 @@ Files: `app/public/portraits/<key>-base.webp`, `-open.webp`, `-mid.webp`, `-blin
 
 ## Fill the look block first
 
-Write one short block of visual facts, from the person's public photos and sources. Use traits, never the name, so the prompt does not trip a real-person filter and the result reads as a caricature.
+Write one short block of visual facts, from the person's public photos and sources. The base prompt also names the person (see Prompt 1) so the likeness is right; the look block pins down the details.
 
 ```
 LOOK: <age range>, <face shape>, <skin tone>, <hair: length, color, style>, <facial hair or none>,
@@ -21,7 +21,9 @@ Show the block to the user in the report and invite corrections. The descriptors
 
 ```
 A stylized 3D animated character portrait in the look of a modern animated feature film, head and
-shoulders bust of a real-world business leader drawn as a friendly caricature: {LOOK}. {WARDROBE}.
+shoulders bust of a real-world business leader drawn as a friendly caricature. The character must
+look like {FULL NAME}: a recognizable likeness of {FULL NAME}, with their real face, features, and
+proportions. {LOOK}. {WARDROBE}.
 Facing the camera straight on, head centered and level, eyes looking at the viewer, shoulders cut
 off by the bottom edge of the frame with a little headroom above the head. Expression: {BASE
 EXPRESSION}, mouth closed and relaxed. Soft even studio lighting, gentle shading, slightly glossy
@@ -67,7 +69,7 @@ same size and aspect ratio as the attached image.
 
 ## Workflow
 
-1. Run Prompt 1 until the base looks like the person and matches the other seats' style. Download it.
+1. Run Prompt 1 until the base clearly looks like {FULL NAME} and matches the other seats' style. Download it.
 2. In the same chat, attach the base and run Prompts 2, 3, and 4 one at a time. Regenerate any frame that fails the checklist below.
 3. Convert each frame to 560 x 560 webp:
 
@@ -106,4 +108,4 @@ Keep the box tight and on skin and facial hair only, and match the tone to the b
 
 ## If Gemini refuses
 
-Remove any trait that reads as an identity claim, keep the cartoon style words, and try again. Or attach a reference photo the user has the right to use and ask for a stylized animated character "inspired by the attached photo". Do not tell the user to work around a block by naming the person if the descriptors alone were refused.
+Take the name out of the "must look like" sentence, lean on the look block, keep the cartoon style words, and try again. Or attach a reference photo the user has the right to use and ask for a stylized animated character "inspired by the attached photo". Only drop the name when Gemini refuses it; the other frames are edits of the base and never need the name.
