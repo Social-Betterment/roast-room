@@ -4,11 +4,11 @@ import { AGENTS_DIR, BRAINS_DIR } from "./env.mjs";
 
 export const SEATS = [
   { key: "bezos", name: "Jeff Bezos", short: "Bezos", initials: "JB", slug: "jeff-bezos", pillar: "Strategy and decisions", question: "Is this the right bet, and how reversible is it?", dimension: "Strategic fit and reversibility", color: "#e8a33d" },
-  { key: "graham", name: "Paul Graham", short: "Graham", initials: "PG", slug: "paul-graham", pillar: "Product and startups", question: "Is this something people actually want, and is it growing?", dimension: "Real demand and growth", color: "#f06b3f" },
-  { key: "hormozi", name: "Alex Hormozi", short: "Hormozi", initials: "AH", slug: "alex-hormozi", pillar: "Offers, pricing, and sales", question: "Will people pay, how much, and how do we close?", dimension: "Offer strength and unit economics", color: "#d94a6a" },
+  { key: "pabrai", name: "Mohnish Pabrai", short: "Pabrai", initials: "MP", slug: "mohnish-pabrai", pillar: "Asymmetric bets and risk", question: "Is the downside small and the upside large, and has someone already proven this works?", dimension: "Payoff asymmetry", color: "#8fbf3f" },
+  { key: "lynch", name: "Peter Lynch", short: "Lynch", initials: "PL", slug: "peter-lynch", pillar: "Business knowledge and homework", question: "Does the founder know this business well enough, and has the homework been done?", dimension: "Edge and evidence", color: "#2ec4d6" },
   { key: "garyvee", name: "Gary Vaynerchuk", short: "Gary V", initials: "GV", slug: "gary-vaynerchuk", pillar: "Marketing and attention", question: "Where does the attention come from, and is it underpriced?", dimension: "Attention and distribution", color: "#9b5de5" },
   { key: "martell", name: "Dan Martell", short: "Martell", initials: "DM", slug: "dan-martell", pillar: "People, hiring, and founder time", question: "Who does this, and what does it cost the founder's calendar?", dimension: "Team capacity and founder time", color: "#3d8bfd" },
-  { key: "wickman", name: "Gino Wickman", short: "Wickman", initials: "GW", slug: "gino-wickman", pillar: "Operations and scaling", question: "Can the business run this without the founder holding it together?", dimension: "Operational readiness", color: "#1fa67a" },
+  { key: "marks", name: "Howard Marks", short: "Marks", initials: "HM", slug: "howard-marks", pillar: "Cycles and second-level thinking", question: "Where are we in the cycle, and what does everyone already believe that may be wrong?", dimension: "Cycle position and contrarian edge", color: "#d4527f" },
   { key: "buffett", name: "Warren Buffett", short: "Buffett", initials: "WB", slug: "warren-buffett", pillar: "Money and capital", question: "What does it do to cash, risk, and long-term value?", dimension: "Downside and capital efficiency", color: "#4c6a92" },
 ];
 export const byKey = Object.fromEntries(SEATS.map((s) => [s.key, s]));

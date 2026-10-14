@@ -24,7 +24,7 @@ Math: [one line per option]
 
 ## Why the council landed here
 
-[3 to 5 bullets: the arguments that carried the room, each tagged with the seat and framework, e.g. (Hormozi, Value Equation)]
+[3 to 5 bullets: the arguments that carried the room, each tagged with the seat and framework, e.g. (Lynch, Know what you own)]
 
 ## Where they fought
 

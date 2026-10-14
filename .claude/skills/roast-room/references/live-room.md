@@ -29,10 +29,10 @@ The room is optional. Write these files anyway; they cost a few lines and the co
     { "id": "C", "label": "Keep $2,000" }
   ],
   "weights": {
-    "hormozi": { "weight": 3, "reason": "Pricing is his pillar" },
+    "lynch": { "weight": 3, "reason": "The founder is entering a market they do not know" },
     "buffett": { "weight": 2, "reason": "Cash risk of losing clients" }
   },
-  "seats": ["bezos", "graham", "hormozi", "garyvee", "martell", "wickman", "buffett"],
+  "seats": ["bezos", "pabrai", "lynch", "garyvee", "martell", "marks", "buffett"],
   "brief": "Two or three sentences.",
   "assumptions": ["Close rate holds at 50% (assumed)"]
 }
@@ -48,8 +48,8 @@ The room is optional. Write these files anyway; they cost a few lines and the co
     {
       "question": "Is customer cash enough to fund the next two hires?",
       "sides": [
-        { "position": "Yes, prepay covers it", "seats": ["Hormozi", "Martell"] },
-        { "position": "No, prepay is pulled-forward revenue", "seats": ["Graham", "Bezos"] }
+        { "position": "Yes, prepay covers it", "seats": ["Lynch", "Martell"] },
+        { "position": "No, prepay is pulled-forward revenue", "seats": ["Pabrai", "Bezos"] }
       ]
     }
   ],
@@ -82,7 +82,7 @@ One to three cruxes. Questions under 90 characters, positions under 50.
   "call": "One or two sentences the founder can act on, naming the option.",
   "recommended": "B",
   "why": [
-    { "point": "One line.", "seat": "Graham", "framework": "Startup = Growth" }
+    { "point": "One line.", "seat": "Pabrai", "framework": "Heads I win, tails I do not lose much" }
   ],
   "minority": { "seat": "Martell", "quote": "The seat's own words, copied from a card.", "would_have_to_be_true": "One line." },
   "next_steps": [ { "when": "This week", "action": "One line." } ],

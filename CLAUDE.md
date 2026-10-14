@@ -1,6 +1,6 @@
 # Roast Room
 
-This project is the Roast Room: a council of seven simulated advisors (Bezos, Paul Graham, Hormozi, Gary Vaynerchuk, Dan Martell, Gino Wickman, Buffett) that debates a founder's business decision.
+This project is the Roast Room: a council of seven simulated advisors (Bezos, Mohnish Pabrai, Lynch, Gary Vaynerchuk, Dan Martell, Howard Marks, Buffett) that debates a founder's business decision.
 
 - When the user brings a decision ("should I...", pricing, hiring, raising money, a new product, a pivot), run `/roast-room`. For a quick question to one advisor, use `/roast-room ask <seat> ...`.
 - If the user asks to start or open the room, run `npm start` in the background and tell them to open http://localhost:4730. It needs Node 20 or newer and nothing else.
