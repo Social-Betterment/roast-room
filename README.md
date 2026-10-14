@@ -91,11 +91,34 @@ Run `npm start`, open http://localhost:4730, and click **Past sessions**. Three 
 
 If you'd rather type a decision straight into the room, copy `.env.example` to `.env`, add an `ANTHROPIC_API_KEY`, set `COUNCIL_RUNNER=api`, and restart `npm start`. That mode bills your Anthropic API account (about 25 calls per full council).
 
+## Add your own advisor
+
+The `/new-seat` skill builds a new seat from a person's name:
+
+```
+/new-seat Peter Lynch
+/new-seat Mohnish Pabrai --key pabrai
+```
+
+It does these things in order:
+
+1. **Scopes the seat.** It picks a short key, a slug, a pillar the person is a real operator in (one the roster does not already cover), the dimension the seat scores on, and a color. It asks only when the name is ambiguous or the pillar is a real choice.
+2. **Builds a corpus** of the person's public work (essays, letters, long talks, long interviews), with a source id on each file. Aim for 40 or more sources; 25 is the floor, and a thinner brain is marked as thin.
+3. **Writes the brain** to `.claude/skills/roast-room/brains/<slug>/`: `sources.md`, `frameworks.md`, `principles.md`, `positions.md`, `stories.md`, `books.md`, `voice.md`, and the one-page `_hot.md`. Every quote is verbatim from a fetched source and tied to its id.
+4. **Writes the agent** to `.claude/agents/council-<key>.md`.
+5. **Checks the work** with `python3 .claude/skills/new-seat/scripts/check_brain.py <slug> --corpus <folder>`, which fails on a missing file or section, an unknown source id, a quote that is not in its source, or an em dash.
+6. **Writes the portrait prompts.** You get four Gemini image prompts (base, open, mid, blink) in `docs/portraits/<key>-prompts.md`. The base prompt says the image should look like the person, and the other three edit the base, so the frames line up. The skill also prints the `cwebp` commands for the finished frames.
+
+Then it offers to register the seat. That adds the entry to `app/lib/seats.mjs` and the row to `.claude/skills/roast-room/references/seats.md`, and updates any text that says "seven" advisors. Save your four frames as `app/public/portraits/<key>-base|open|mid|blink.webp`. The room will not show the seat until it is registered and the frames are in place.
+
+The roster ships with seven seats, and the docs and the table layout assume seven. The usual move is to swap: tell the skill which advisor to replace, then delete that advisor's agent, brain, and portraits. Adding an eighth seat has not been tried.
+
 ## What's inside
 
 | Path | What |
 |---|---|
 | `.claude/skills/roast-room/` | The skill: protocol, prompts, scoring, report template, and the seven brains |
+| `.claude/skills/new-seat/` | The skill that builds a new advisor: brain, agent, and portrait prompts |
 | `.claude/agents/` | The seven seat agents |
 | `app/` | The room: a zero-dependency Node server, the web page, and the PDF builder |
 | `sessions/` | Your councils (kept out of git) and the three examples |
