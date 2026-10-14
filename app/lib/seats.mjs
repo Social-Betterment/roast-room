@@ -119,7 +119,8 @@ const HEADER = /^\W*OPTIONS\b/i;
 function splitLabel(s) {
   const t = s.replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
   const m = t.match(/^(.{3,70}?)(?::\s+|\s[-–—]\s+|\.\s+)(.+)$/);
-  if (m) return { label: m[1].replace(/[.:]+$/, "").trim(), why: m[2].trim() };
+  const bare = (s) => s.replace(/^\[(.*)\]$/, "$1").replace(/[.:]+$/, "").trim(); // some cards copy the template's [brackets]
+  if (m) return { label: bare(m[1]), why: m[2].trim() };
   return { label: t.length > 60 ? t.slice(0, 57).replace(/\s+\S*$/, "") + "…" : t, why: t };
 }
 
