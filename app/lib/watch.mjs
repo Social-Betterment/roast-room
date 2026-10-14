@@ -21,7 +21,7 @@ const STALE_MS = 3 * 60 * 60 * 1000; // a folder untouched this long is an aband
 const readText = (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return null; } };
 const readJson = (p) => { const t = readText(p); if (!t) return null; try { return JSON.parse(t); } catch { return null; } };
 
-/** "Gary V", "garyvee", "GARY V (Marketing)", "Warren Buffett" -> seat key */
+/** "Fisher", "fisher", "FISHER (Management)", "Warren Buffett" -> seat key */
 export function seatKey(x) {
   const t = String(x || "").toLowerCase().replace(/\(.*$/, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
   if (!t) return null;

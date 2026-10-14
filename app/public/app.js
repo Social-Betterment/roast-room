@@ -127,7 +127,7 @@ function renderSeats() {
     </div>`).join("");
   $("#plates").innerHTML = state.seats.map((s) => `
     <div class="nameplate" id="plate-${s.key}" data-seat="${s.key}">
-      <b>${esc(s.short === "Gary V" ? "Gary V" : s.name)}</b>
+      <b>${esc(s.name)}</b>
       <small>${esc(s.pillar)}</small>
       <div class="meta"><span class="pips" title="Weight on this decision"></span><span class="chip" hidden></span><span class="score" hidden></span></div>
     </div>`).join("");

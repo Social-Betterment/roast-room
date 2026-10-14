@@ -53,7 +53,7 @@ One column per seat: its final PILLAR SCORE, which is that seat's judgment of th
 | Strategy and decisions (Bezos) | Strategic fit and reversibility |
 | Asymmetric bets and risk (Pabrai) | Payoff asymmetry |
 | Business knowledge and homework (Lynch) | Edge and evidence |
-| Marketing and attention (Gary V) | Attention and distribution |
+| Management and long-term growth quality (Fisher) | Management quality and growth runway |
 | People, hiring, and founder time (Martell) | Team capacity and founder time |
 | Cycles and second-level thinking (Marks) | Cycle position and contrarian edge |
 | Money and capital (Buffett) | Downside and capital efficiency |

@@ -2,7 +2,7 @@
 
 Copy everything below the line to `.claude/agents/council-<key>.md` and replace each `{{...}}`. Remove the guidance notes in `[brackets]`. Everything else stays word for word, so the seat behaves like the other seven.
 
-The rest of the roster, for the "natural opponents" line: Bezos (strategy), Pabrai (asymmetric bets and risk), Lynch (business knowledge and homework), Gary V (marketing), Martell (people and founder time), Marks (cycles and second-level thinking), Buffett (money and capital). Tensions to build from: `references/seats.md` in the roast-room skill.
+The rest of the roster, for the "natural opponents" line: Bezos (strategy), Pabrai (asymmetric bets and risk), Lynch (business knowledge and homework), Fisher (management and long-term growth quality), Martell (people and founder time), Marks (cycles and second-level thinking), Buffett (money and capital). Tensions to build from: `references/seats.md` in the roast-room skill.
 
 ---
 name: council-{{key}}

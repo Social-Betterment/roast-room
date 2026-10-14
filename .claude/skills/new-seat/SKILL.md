@@ -29,7 +29,7 @@ Read once before you start: `references/brain-formats.md` (what each brain file 
 
 From the user's input, settle these. Propose defaults for anything missing, state them in one line, and go. Ask (AskUserQuestion, one batch) only when the person is ambiguous (two people share the name) or the pillar is a real fork.
 
-- **Name, key, slug.** `key` is the short lowercase handle used in agent and file names (`lynch`, `garyvee`); `slug` is `first-last` (`peter-lynch`). Both must be unused: check `.claude/agents/` and `brains/`.
+- **Name, key, slug.** `key` is the short lowercase handle used in agent and file names (`lynch`, `fisher`); `slug` is `first-last` (`peter-lynch`). Both must be unused: check `.claude/agents/` and `brains/`.
 - **Pillar and owned question.** The one business area this person is a world-class operator in, and a question in the same shape as the roster in `references/seats.md` ("Will people pay, how much, and how do we close?"). It must not duplicate an existing pillar. If the person does not fit any gap, tell the user before building.
 - **Dimension**: the label the seat scores on (`Offer strength and unit economics`).
 - **Color**: a hex not used by the current seats (see `app/lib/seats.mjs`).

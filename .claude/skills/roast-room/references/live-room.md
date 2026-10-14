@@ -34,7 +34,7 @@ The room is optional. Write these files anyway; they cost a few lines and the co
     "lynch": { "weight": 3, "reason": "The founder is entering a market they do not know" },
     "buffett": { "weight": 2, "reason": "Cash risk of losing clients" }
   },
-  "seats": ["bezos", "pabrai", "lynch", "garyvee", "martell", "marks", "buffett"],
+  "seats": ["bezos", "pabrai", "lynch", "fisher", "martell", "marks", "buffett"],
   "brief": "Two or three sentences.",
   "assumptions": ["Close rate holds at 50% (assumed)"]
 }
@@ -53,8 +53,8 @@ When the founder named no options, write `council.json` first with no options, s
   "mode": "full",
   "options": [],
   "options_open": true,
-  "weights": { "garyvee": { "weight": 3, "reason": "Growth here is an attention problem" } },
-  "seats": ["bezos", "pabrai", "lynch", "garyvee", "martell", "marks", "buffett"],
+  "weights": { "fisher": { "weight": 3, "reason": "Whether this audience keeps growing for years is the question" } },
+  "seats": ["bezos", "pabrai", "lynch", "fisher", "martell", "marks", "buffett"],
   "brief": "Two or three sentences.",
   "assumptions": []
 }

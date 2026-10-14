@@ -2,14 +2,14 @@
 
 ![The Roast Room](docs/room.jpg)
 
-Bring a hard business decision and seven AI advisors argue it out, then hand you a scored verdict and a one-click PDF. The seats are Jeff Bezos, Mohnish Pabrai, Peter Lynch, Gary Vaynerchuk, Dan Martell, Howard Marks, and Warren Buffett, each built from that person's public work: their letters, essays, talks, and videos. The council runs in Claude Code, and a small local web app shows them around a table talking it through.
+Bring a hard business decision and seven AI advisors argue it out, then hand you a scored verdict and a one-click PDF. The seats are Jeff Bezos, Mohnish Pabrai, Peter Lynch, Philip Fisher, Dan Martell, Howard Marks, and Warren Buffett, each built from that person's public work: their letters, essays, talks, and videos. The council runs in Claude Code, and a small local web app shows them around a table talking it through.
 
 | Seat | Pillar | The question they own |
 |---|---|---|
 | Jeff Bezos | Strategy and decisions | Is this the right bet, and how reversible is it? |
 | Mohnish Pabrai | Asymmetric bets and risk | Is the downside small, and has someone already proven this works? |
 | Peter Lynch | Business knowledge and homework | Does the founder know this business, and has the homework been done? |
-| Gary Vaynerchuk | Marketing and attention | Where does the attention come from? |
+| Philip Fisher | Management and long-term growth quality | Can this team be trusted, and can the business keep growing for years? |
 | Dan Martell | People, hiring, and founder time | Who does this, and what does it cost your calendar? |
 | Howard Marks | Cycles and second-level thinking | Where are we in the cycle, and what does everyone already believe that may be wrong? |
 | Warren Buffett | Money and capital | What does it do to cash, risk, and long-term value? |

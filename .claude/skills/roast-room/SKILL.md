@@ -1,6 +1,6 @@
 ---
 name: roast-room
-description: Use when a founder wants a hard business decision debated by a council of world-class operators, says "roast room", "put this in the Roast Room", "founder council", "convene the council", "take this to the board", "what would Lynch, Bezos, or Buffett say", "should I do X", or can't make up their mind on pricing, hiring, raising money, a new product, a partnership, a pivot, an event, or spending. Seven sub-agents, each built from one expert's public work (Bezos, Mohnish Pabrai, Lynch, Gary Vaynerchuk, Dan Martell, Howard Marks, Buffett), argue it over three rounds, then a Chair returns a scored verdict, the reasoning, the dissent, and next steps. When the founder names no options, the seats first propose plausible ones (Round 0). Also does a one-seat consult ("ask the Lynch seat"). Not /roast (generic personas, idea validation).
+description: Use when a founder wants a hard business decision debated by a council of world-class operators, says "roast room", "put this in the Roast Room", "founder council", "convene the council", "take this to the board", "what would Lynch, Bezos, or Buffett say", "should I do X", or can't make up their mind on pricing, hiring, raising money, a new product, a partnership, a pivot, an event, or spending. Seven sub-agents, each built from one expert's public work (Bezos, Mohnish Pabrai, Lynch, Philip Fisher, Dan Martell, Howard Marks, Buffett), argue it over three rounds, then a Chair returns a scored verdict, the reasoning, the dissent, and next steps. When the founder names no options, the seats first propose plausible ones (Round 0). Also does a one-seat consult ("ask the Lynch seat"). Not /roast (generic personas, idea validation).
 argument-hint: "[the decision] [--quick] [--seats lynch,buffett,...] | ask <seat> [question]"
 ---
 
@@ -61,7 +61,7 @@ Then add `## Chair notes` to `round-0.md`: the final list with who proposed each
 
 Spawn every seat in **one message**, in parallel, foreground (`run_in_background: false`), `subagent_type: council-<seat>`, with the Round 1 prompt (add its Round 0 line when the options came from Round 0). If a `council-*` type is not registered in this session, use `general-purpose` with the fallback lines from `round-prompts.md`.
 
-When the cards come back, save them verbatim to `round-1.md`, one `## <Seat>` heading per card (Bezos, Pabrai, Lynch, Gary V, Martell, Marks, Buffett), and write the file right away so the room can start playing. Check each card has every field; send a card back once if it is missing scores or a stance. Then add a `## Chair notes` section at the bottom of `round-1.md`:
+When the cards come back, save them verbatim to `round-1.md`, one `## <Seat>` heading per card (Bezos, Pabrai, Lynch, Fisher, Martell, Marks, Buffett), and write the file right away so the room can start playing. Check each card has every field; send a card back once if it is missing scores or a stance. Then add a `## Chair notes` section at the bottom of `round-1.md`:
 
 - The **cruxes**: the one to three underlying disagreements that explain why seats split (a factual question, a numbers question, or a values question such as speed versus safety), with the seats on each side.
 - The **unanimity check** (`scoring.md`): if Round 1 converged, make the strongest unargued alternative a crux and name which seats must argue it at full strength.
@@ -107,5 +107,5 @@ Run the same protocol sequentially yourself. For each seat, read `.claude/agents
 
 - `brains/<slug>/`: one brain per seat (`_hot.md`, `frameworks.md`, `principles.md`, `positions.md`, `voice.md`, `stories.md`, `books.md`, `sources.md`).
 - `scripts/check_quotes.py`: verifies every attributed quote in a session against the brains.
-- Agents: `.claude/agents/council-{bezos,pabrai,lynch,garyvee,martell,marks,buffett}.md`.
+- Agents: `.claude/agents/council-{bezos,pabrai,lynch,fisher,martell,marks,buffett}.md`.
 - The room app: `app/` (start at the project `README.md`).

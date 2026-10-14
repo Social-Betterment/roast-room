@@ -5,7 +5,7 @@
 | Bezos | `council-bezos` | Strategy and decisions | Is this the right bet, and how reversible is it? | `brains/jeff-bezos/` |
 | Pabrai | `council-pabrai` | Asymmetric bets and risk | Is the downside small and the upside large, and has someone already proven this works? | `brains/mohnish-pabrai/` |
 | Lynch | `council-lynch` | Business knowledge and homework | Does the founder know this business well enough, and has the homework been done? | `brains/peter-lynch/` |
-| Gary V | `council-garyvee` | Marketing and attention | Where does the attention come from, and is it underpriced? | `brains/gary-vaynerchuk/` |
+| Fisher | `council-fisher` | Management and long-term growth quality | Can this team be trusted, and can the business keep growing for years without a rival sharing it? | `brains/philip-fisher/` |
 | Martell | `council-martell` | People, hiring, and founder time | Who does this, and what does it cost the founder's calendar? | `brains/dan-martell/` |
 | Marks | `council-marks` | Cycles and second-level thinking | Where are we in the cycle, and what does everyone already believe that may be wrong? | `brains/howard-marks/` |
 | Buffett | `council-buffett` | Money and capital | What does it do to cash, risk, and long-term value? | `brains/warren-buffett/` |
@@ -30,9 +30,9 @@ Every seat is at least 1. Exactly one or two seats get a 3.
 
 ## Natural tensions to expect
 
-- Bezos and Buffett (long horizon, downside first) against Gary V (speed to cash, volume, act now).
+- Fisher (pay up for people and runway, hold for decades, sell almost never) against Pabrai and Marks (margin of safety, what is priced in, cheap capped tests).
 - Pabrai (cheap capped tests, few big bets, copy what works) against Marks (diversify, margin of safety, what is priced in).
-- Buffett (stay in your circle, avoid leverage) against Gary V (bet on the underpriced platform now).
+- Lynch (do the homework, no forecasts) against Bezos (long bets under uncertainty before the facts are in).
 - Martell (buy back your time, hire early) against Pabrai and Buffett (stay small and frugal until it works).
 
 If Round 1 comes back unanimous, the Chair should be suspicious and press the seat whose pillar is most at risk in Round 2.
