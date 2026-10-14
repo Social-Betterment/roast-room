@@ -6,9 +6,12 @@
 //   council.json  -> setup        round-1.md -> Round 1 cards   cruxes.json -> fault lines
 //   round-2.md    -> debate cards  draft.json -> proposal       round-3.md  -> votes
 //   verdict.json  -> the verdict
+// When the founder named no options, council.json starts with "options": [] and the seats
+// propose them first: round-0.md -> Round 0 cards, then council.json is rewritten with the
+// merged options and the room moves on to Round 1.
 import fs from "node:fs";
 import path from "node:path";
-import { SEATS, byKey, parseCard, checkQuotes } from "./seats.mjs";
+import { SEATS, byKey, parseCard, parseProposals, checkQuotes } from "./seats.mjs";
 import { SESSIONS_DIR } from "./env.mjs";
 import { optionScores, finalNumbers, verdictSeats, DISCLAIMER } from "./council.mjs";
 
@@ -60,8 +63,22 @@ function finish(x, status) {
   x.subs.clear();
 }
 
+// who proposed an option: seat keys, plus "founder" (their own idea) and "chair" (the baseline)
+const BY_EXTRA = new Set(["founder", "chair"]);
+function normalizeOptions(list) {
+  return (list || []).map((o, i) => {
+    if (typeof o === "string") return { id: "ABCDE"[i], label: o, by: [] };
+    const by = (o.by || []).map((k) => seatKey(k) || (BY_EXTRA.has(String(k).toLowerCase()) ? String(k).toLowerCase() : null)).filter(Boolean);
+    return { id: String(o.id || "ABCDE"[i]).toUpperCase(), label: o.label || o.text || "", by };
+  });
+}
+
+// the Chair has written the merged options back into council.json (any options at all means it is done,
+// even if it forgot to clear options_open)
+const optionsReady = (c) => Boolean(c) && Array.isArray(c.options) && c.options.length > 0;
+
 function normalizeSetup(c) {
-  const options = (c.options || []).map((o, i) => (typeof o === "string" ? { id: "ABCD"[i], label: o } : { id: String(o.id || "ABCD"[i]).toUpperCase(), label: o.label || o.text || "" }));
+  const options = normalizeOptions(c.options);
   const weights = Object.fromEntries(SEATS.map((s) => [s.key, { weight: 1, reason: "" }]));
   const wl = Array.isArray(c.weights) ? c.weights : Object.entries(c.weights || {}).map(([seat, w]) => (typeof w === "number" ? { seat, weight: w } : { seat, ...w }));
   for (const w of wl) { const k = seatKey(w.seat); if (k) weights[k] = { weight: Math.max(1, Math.min(3, Number(w.weight) || 1)), reason: w.reason || "" }; }
@@ -69,7 +86,7 @@ function normalizeSetup(c) {
   const mode = c.mode === "quick" ? "quick" : "full";
   return {
     title: c.title || "Roast Room", decision: c.decision || "", brief: c.brief || "", mode,
-    options, assumptions: c.assumptions || [], weights,
+    options, optionsNote: c.options_note || "", assumptions: c.assumptions || [], weights,
     seats: seats.length ? [...new Set(seats)] : SEATS.map((s) => s.key),
   };
 }
@@ -94,13 +111,15 @@ function readRound(x, r, force) {
   if (!md) return false;
   for (const c of splitCards(md)) {
     if (!st.seats.includes(c.key) || st.cards[r][c.key]) continue;
-    const parsed = parseCard(c.text, st.options.map((o) => o.id));
+    // Round 0 cards are lists of options, not scored positions
+    const parsed = r === 0 ? parseProposals(c.text) : parseCard(c.text, st.options.map((o) => o.id));
     const quotes = checkQuotes(c.key, c.text);
     st.cards[r][c.key] = { text: c.text, parsed, quotes };
     emit(x, "seat_done", { round: r, seat: c.key, text: c.text, parsed, quotes, name: byKey[c.key].name });
   }
   const have = st.seats.filter((k) => st.cards[r][k]).length;
   if (have === st.seats.length || (force && have > 0)) {
+    if (r === 0) { emit(x, "round_done", { round: 0, scores: null }); return true; }
     st.scores[r] = optionScores(st, r);
     emit(x, "round_done", { round: r, scores: st.scores[r] });
     return true;
@@ -117,10 +136,34 @@ function sync(x) {
     const c = readJson(f("council.json"));
     if (!c) return;
     Object.assign(st, normalizeSetup(c));
+    // No options named: the seats propose them in Round 0. A finished council that went through
+    // Round 0 has its merged options in council.json already, so round-0.md is what tells us.
+    const r0 = c.options_open === true || !st.options.length || c.options_from === "round0" || has("round-0.md");
+    if (r0) st.options = [];
     x.title = st.title;
     x.mode = st.mode;
     emit(x, "phase", { phase: "setup", label: "The Chair is reading your question", at: mtime(f("council.json")) });
-    emit(x, "setup", { title: st.title, decision: st.decision, brief: st.brief, options: st.options, assumptions: st.assumptions, weights: st.weights, seats: st.seats, mode: st.mode });
+    emit(x, "setup", { title: st.title, decision: st.decision, brief: st.brief, options: st.options, options_pending: r0, assumptions: st.assumptions, weights: st.weights, seats: st.seats, mode: st.mode });
+    if (r0) {
+      startRound(x, 0, "Round 0: the seats propose options", mtime(f("council.json")));
+      x.step = "r0";
+    } else {
+      startRound(x, 1, "Round 1: opening positions", mtime(f("council.json")));
+      x.step = "r1";
+    }
+  }
+  if (x.step === "r0") {
+    // the Chair may write the merged options before every card is in; then play what there is
+    const ready = optionsReady(readJson(f("council.json")));
+    if (!readRound(x, 0, ready) && !ready) return;
+    emit(x, "phase", { phase: "options", label: "The Chair is merging the options", at: mtime(has("round-0.md") ? f("round-0.md") : f("council.json")) });
+    x.step = "options";
+  }
+  if (x.step === "options") {
+    const c = readJson(f("council.json"));
+    if (!optionsReady(c)) return;
+    st.options = normalizeSetup(c).options;
+    emit(x, "options", { options: st.options, note: c.options_note || "" });
     startRound(x, 1, "Round 1: opening positions", mtime(f("council.json")));
     x.step = "r1";
   }
@@ -186,7 +229,7 @@ function load(name) {
   let x = live.get(name);
   if (!x) {
     x = { id: name, dir, events: [], subs: new Set(), status: "running", started: Date.now(), step: "setup", title: "", mode: "full",
-      st: { cards: { 1: {}, 2: {}, 3: {} }, scores: {}, rounds: [] } };
+      st: { cards: { 0: {}, 1: {}, 2: {}, 3: {} }, scores: {}, rounds: [] } };
     live.set(name, x);
   }
   if (x.status === "running") {

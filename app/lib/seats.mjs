@@ -109,3 +109,33 @@ export function parseCard(text, optionIds) {
     thisWeek: field(text, "WHAT I'D DO THIS WEEK"),
   };
 }
+
+// ---------- Round 0: the options a seat puts on the table ----------
+const ITEM = /^\s*(?:\d+[.)]|[-*•])\s+(.+)$/;
+const AFTER_LIST = /^\W*(?:WHAT I'?D WANT TO KNOW|WHAT I NEED TO KNOW|NOTE|SEAT)\b[^\n]*:/i;
+const HEADER = /^\W*OPTIONS\b/i;
+
+/** "Label: why", "Label - why" or "Label. why" -> { label, why }. Labels stay short. */
+function splitLabel(s) {
+  const t = s.replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+  const m = t.match(/^(.{3,70}?)(?::\s+|\s[-–—]\s+|\.\s+)(.+)$/);
+  if (m) return { label: m[1].replace(/[.:]+$/, "").trim(), why: m[2].trim() };
+  return { label: t.length > 60 ? t.slice(0, 57).replace(/\s+\S*$/, "") + "…" : t, why: t };
+}
+
+/** A Round 0 card: numbered (or bulleted) options under an "OPTIONS ..." line. Tolerates bold
+ * labels and wrapped lines. Without the header, any list before the next field counts. */
+export function parseProposals(text) {
+  const lines = String(text || "").split("\n");
+  const items = [];
+  let listing = !lines.some((l) => HEADER.test(l)); // no header: take the list wherever it is
+  for (const raw of lines) {
+    if (HEADER.test(raw)) { listing = true; continue; }
+    if (AFTER_LIST.test(raw)) { if (items.length) listing = false; continue; }
+    if (!listing) continue;
+    const m = raw.match(ITEM);
+    if (m) items.push(m[1]);
+    else if (items.length && raw.trim() && /^\s/.test(raw)) items[items.length - 1] += " " + raw.trim(); // a wrapped line
+  }
+  return { proposals: items.map(splitLabel).filter((p) => p.label), need: field(text, "WHAT I'D WANT TO KNOW FIRST") || field(text, "WHAT I NEED TO KNOW") };
+}

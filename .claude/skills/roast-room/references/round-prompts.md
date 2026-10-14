@@ -6,9 +6,45 @@ Agent type: `council-<seat>`. If that type is not registered in this session (ag
 
 Paths in prompts are relative to the repo root; give the absolute repo root once at the top of each prompt.
 
-**Options.** When the brief lists options (A, B, C, including "don't do it"), every card scores every option. When it is a single yes or no decision, the options are "do it as proposed" and "don't".
+**Options.** When the brief lists options (A, B, C, including "don't do it"), every card scores every option. When it is a single yes or no decision, the options are "do it as proposed" and "don't". When the founder named no options, Round 0 (below) produces them first, and the brief lists the merged options by the time Round 1 starts.
 
 **Pillar score.** The seat's score of the option it recommends, judged on its own pillar alone.
+
+---
+
+## Round 0: the options (only when the founder named none)
+
+Spawn the seats at the table in one message: all seven, the four of a quick council, or the named seats. The brief says "Options: open". This round exists so the options are plausible and broad, not so each seat can push the one it likes, so the prompt asks for a spread and forbids naming a favorite.
+
+```
+ROAST ROOM COUNCIL, ROUND 0: THE OPTIONS
+
+Repo root: [absolute path]. You hold the [SEAT] seat ([pillar]). Read your brain's _hot.md; read a second brain file only if you need it.
+
+Read the brief: [session folder]/brief.md
+
+The founder named no options. This round is not about picking a winner. Your job is to put plausible options on the table so the council can debate and score them in the next rounds.
+
+Answer in your seat's voice, plain text, under 220 words, in exactly this shape:
+
+SEAT: [SEAT] ([pillar])
+OPTIONS I'D PUT ON THE TABLE:
+1. [label, under 50 characters]: what it is, and its best case in one line, argued the way its strongest defender would.
+2. [label]: ...
+3. [label]: ...
+WHAT I'D WANT TO KNOW FIRST: one fact or number that would sharpen these options.
+
+Rules:
+- Plausible, not favorite. Each option must be something a smart founder could really do and defend. Do not give your pick and two weak ones for contrast.
+- Cover the range. Across your three: one that does more or moves faster, one that does less or waits, and one that attacks the problem from a different angle than your pillar's usual answer.
+- At least one of your three must be an option you would not back yourself, but that another seat on this council well might. Write its case fairly.
+- Make each option concrete: an action, a size, a timeframe. "Think about it more" is not an option.
+- Do not say which option you prefer and do not score anything. Round 1 is for taking a position.
+- The Chair adds "keep doing what you do now" itself, so do not spend one of your three on it. If the founder's own idea is in the brief, do not repeat it as it stands; propose alternatives to it or variants of it.
+- Quote only verbatim lines from your brain, with the source id.
+```
+
+The room reads the numbered lines under the `OPTIONS` heading (label before the first colon or dash) and plays them as that seat's line, so keep the shape.
 
 ---
 
@@ -20,6 +56,7 @@ ROAST ROOM COUNCIL, ROUND 1 OF 3: OPENING POSITION
 Repo root: [absolute path]. You hold the [SEAT] seat ([pillar]). Read your brain's _hot.md, then at most three more brain files that fit this decision (frameworks.md and positions.md are usually the right ones).
 
 Read the brief: [session folder]/brief.md
+[Only if the options came from Round 0, add this line:] The options in the brief were proposed by the council in Round 0, so some may be ones you would not have chosen. Score every one honestly.
 
 Your weight on this decision: [w]/3 ([one-line reason]).
 

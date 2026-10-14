@@ -2,6 +2,10 @@
 
 All numbers come from the seats' cards. The Chair computes, never invents. Use the last round that ran (Round 3 if it ran, else Round 2).
 
+## Round 0 (when the founder named no options)
+
+Round 0 is not scored and does not count as one of the rounds in the report. The weights are set before it and do not change. It ends with 3 to 5 options (never more than five, ids A to E, the baseline last), and every card in Rounds 1 to 3 scores all of them, including the ones the seat did not propose.
+
 ## Option scores (the main number)
 
 Every card scores every option 0 to 10. For each option:

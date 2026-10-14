@@ -58,6 +58,7 @@ button { font: inherit; cursor: pointer; }
   transition: color .3s, background .3s;
 }
 .stepper li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); transition: background .3s; }
+.stepper li[hidden] { display: none; }
 .stepper li.done { color: var(--ink-soft); }
 .stepper li.done::before { background: var(--accent); }
 .stepper li.active { color: var(--ink); }
@@ -86,6 +87,14 @@ button { font: inherit; cursor: pointer; }
 .opt .bar { grid-column: 2; height: 4px; border-radius: 4px; background: var(--surface-3); overflow: hidden; margin-top: -4px; }
 .opt .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width .9s var(--ease-out); }
 .opt .val { grid-row: 1 / span 2; grid-column: 3; font: 600 18px/1 var(--font-display); text-align: right; color: var(--ink); }
+/* who proposed an option (Round 0): faces, or a tag for the founder's own idea and the Chair's baseline */
+.opt .by { display: inline-flex; align-items: center; margin-left: 8px; vertical-align: middle; }
+.opt .by img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; object-position: 50% 12%; margin-left: -4px; border: 1.5px solid var(--surface); background: var(--surface-3); }
+.opt .by img:first-child { margin-left: 0; }
+.opt .by .tag { margin-left: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); border: 1px solid var(--hairline-strong); border-radius: 999px; padding: 0 6px; line-height: 15px; }
+.opt-pending { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--ink-soft); line-height: 1.4; }
+.opt-pending b { color: var(--ink); font-weight: 600; }
+.opt-pending .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: bob 1.6s infinite ease-in-out; }
 
 /* ---------------- layout ---------------- */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; padding: 16px 24px 28px; align-items: start; }

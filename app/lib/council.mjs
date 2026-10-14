@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { SEATS, byKey, systemFor, parseCard, checkQuotes } from "./seats.mjs";
+import { SEATS, byKey, systemFor, parseCard, parseProposals, checkQuotes } from "./seats.mjs";
 import * as ai from "./anthropic.mjs";
 import { S } from "./anthropic.mjs";
 import { SESSIONS_DIR } from "./env.mjs";
@@ -47,20 +47,56 @@ export function subscribe(s, res) {
 
 // ---------------------------------------------------------------- prompts
 function briefBlock(st) {
-  const opts = st.options.map((o) => `(${o.id}) ${o.label}`).join("\n");
+  const opts = st.options.length
+    ? st.options.map((o) => `(${o.id}) ${o.label}`).join("\n")
+    : `(none named by the founder; the council proposes them in Round 0)${st.founderIdea ? `\nThe founder's own idea, which stays on the list: ${st.founderIdea}` : ""}`;
   return `THE DECISION: ${st.decision}\n\nOPTIONS:\n${opts}\n\n${st.brief}\n\nAssumptions the Chair made (marked as assumed; challenge them if they matter):\n${st.assumptions.map((a) => `- ${a}`).join("\n")}`;
 }
 const optLine = (st) => st.options.map((o) => `${o.id} n/10`).join(" · ");
 
-function round1Prompt(st, seat) {
-  const w = st.weights[seat.key];
-  return `ROAST ROOM COUNCIL, ROUND 1 OF 3: OPENING POSITION
+// Round 0 runs when the founder named no options: each seat proposes plausible ones, the Chair merges them.
+const MAX_OPTIONS = 5;
+const ROUND0_RULES = `Rules:
+- Plausible, not favorite. Each option must be something a smart founder could really do and defend. Do not give your pick and two weak ones for contrast.
+- Cover the range. Across your three: one that does more or moves faster, one that does less or waits, and one that attacks the problem from a different angle than your pillar's usual answer.
+- At least one of your three must be an option you would not back yourself, but that another seat on this council well might. Write its case fairly.
+- Make each option concrete: an action, a size, a timeframe. "Think about it more" is not an option.
+- Do not say which option you prefer and do not score anything. Round 1 is for taking a position.
+- The Chair adds "keep doing what you do now" itself, so do not spend one of your three on it. If the founder's own idea is in the brief, do not repeat it as it stands; propose alternatives to it or variants of it.
+- Quote only verbatim lines from your brain, with the source id.`;
+
+function round0Prompt(st, seat) {
+  return `ROAST ROOM COUNCIL, ROUND 0: THE OPTIONS
 
 You hold the ${seat.short.toUpperCase()} seat (${seat.pillar}).
 
 THE BRIEF
 ${briefBlock(st)}
 
+The founder named no options. This round is not about picking a winner. Your job is to put plausible options on the table so the council can debate and score them in the next rounds.
+
+Answer in your seat's voice, first person, plain text, under 220 words, in exactly this shape:
+
+SEAT: ${seat.short.toUpperCase()} (${seat.pillar})
+OPTIONS I'D PUT ON THE TABLE:
+1. [label, under 50 characters]: what it is, and its best case in one line, argued the way its strongest defender would.
+2. [label]: ...
+3. [label]: ...
+WHAT I'D WANT TO KNOW FIRST: one fact or number that would sharpen these options.
+
+${ROUND0_RULES}`;
+}
+
+function round1Prompt(st, seat) {
+  const w = st.weights[seat.key];
+  const fromR0 = st.optionsFromRound0 ? "\nThe options above were proposed by the council in Round 0, so some may be ones you would not have chosen. Score every one honestly.\n" : "";
+  return `ROAST ROOM COUNCIL, ROUND 1 OF 3: OPENING POSITION
+
+You hold the ${seat.short.toUpperCase()} seat (${seat.pillar}).
+
+THE BRIEF
+${briefBlock(st)}
+${fromR0}
 Your weight on this decision: ${w.weight}/3 (${w.reason}).
 
 Answer in your seat's voice, first person, plain text, under 300 words, in exactly this shape:
@@ -185,7 +221,9 @@ async function chairSetup(st) {
     title: S.str,
     decision: S.str,
     brief: S.str,
-    options: S.arr(S.obj({ id: S.enum("A", "B", "C", "D"), label: S.str })),
+    options_given: S.bool,
+    founder_idea: S.str,
+    options: S.arr(S.obj({ id: S.enum("A", "B", "C", "D", "E"), label: S.str })),
     assumptions: S.arr(S.str),
     weights: S.arr(S.obj({ seat: S.enum(...SEATS.map((s) => s.key)), weight: S.int, reason: S.str })),
     quick_seats: S.arr(S.enum(...SEATS.map((s) => s.key))),
@@ -199,12 +237,52 @@ async function chairSetup(st) {
 Set up the room.
 - title: the decision in 3 to 7 words.
 - decision: one line.
-- options: 2 to 4 options with ids A, B, C (D only if truly needed). Always include "don't do it" or "keep doing what you do now", and the obvious smaller version if the founder brought one big idea.
+- options_given: true only if the founder named two or more alternatives or asked an either/or ("A or B", "yes or no"). A single idea ("should I hire a CFO?") or an open question ("what should I do about churn?") is false.
+- options: if options_given, the founder's options in their own words with ids A, B, C (D and E only if they named that many), and add "don't do it" or "keep doing what you do now" if it is missing. If options_given is false, an empty list. Never invent options here: when the founder named none, the council proposes them in Round 0.
+- founder_idea: if the founder named one idea but no alternatives, that idea as a label under 50 characters; otherwise an empty string.
 - brief: under 200 words covering the business, resources, what success looks like, and the founder's lean, using only what the founder said. Do not invent facts.
 - assumptions: any number or fact you had to assume to make the brief usable, each one line. Keep it to what matters.
 - weights: one entry for every seat, weight 1 to 3 (3 = the decision lives in this pillar, 2 = materially affected, 1 = touched at the edges). Exactly one or two seats at 3. Reason in one line.
 - quick_seats: the four seats for a quick council: the two highest-weight seats, Buffett or Bezos as the downside check (whichever is not already in), and the seat most likely to disagree with the others.`,
   });
+}
+
+/** The Chair merges the Round 0 proposals into the options the council will debate and score. */
+async function chairOptions(st) {
+  const schema = S.obj({
+    options: S.arr(S.obj({ id: S.enum("A", "B", "C", "D", "E"), label: S.str, by: S.arr(S.enum(...SEATS.map((s) => s.key), "founder", "chair")), baseline: S.bool })),
+    note: S.str,
+  });
+  const m = await ai.json({
+    model: MODELS.chair, system: CHAIR_SYSTEM, schema, maxTokens: 2500,
+    prompt: `${briefBlock(st)}
+
+ROUND 0 PROPOSALS (every seat at the table, in its own words)
+${cardsBlock(st, 0)}
+
+Merge these into the options the council will debate and score.
+- Merge only true duplicates (same action, same size and timing). Keep a seat's own label wording; shorten it only if it is over 50 characters. List every seat that proposed a version in by.
+- Keep the range. The list should span doing more or moving faster, doing less or waiting, and a different angle, whenever the seats proposed them. Do not drop an option because only one seat proposed it if it is genuinely different. Drop only duplicates, strawmen, and anything that cannot be done.
+- If the founder named an idea, keep it as an option with by ["founder"] (plus any seat that also proposed it).
+- Always include the baseline: "keep doing what you do now" or "don't do it", with baseline true. It is the only option you add yourself (by ["chair"], unless a seat proposed it). Put it last. Every other option has baseline false.
+- At most ${MAX_OPTIONS} options, ids A to E in order, boldest first, baseline last. Prefer four. If more than four distinct options remain besides the baseline, merge the two neighbors that differ least into one option (use the clearer label and name the difference in a few words).
+- note: one or two plain sentences: how many proposals came in, what you merged, and what you dropped and why.`,
+  });
+  return finalizeOptions(m, st.founderIdea);
+}
+
+/** Whatever the Chair returned, the room gets 2 to 5 options: the founder's own idea kept, the
+ * baseline last, ids A to E in order. */
+export function finalizeOptions(m, founderIdea = "") {
+  const all = (m.options || []).filter((o) => String(o.label || "").trim()).map((o) => ({ label: o.label.trim().slice(0, 60), by: [...new Set(o.by || [])], baseline: Boolean(o.baseline) }));
+  const bi = all.findIndex((o) => o.baseline);
+  const baseline = bi >= 0 ? all.splice(bi, 1)[0] : { label: "Keep doing what I do now", by: ["chair"] };
+  const rest = all.filter((o) => !o.baseline);
+  if (String(founderIdea).trim() && !rest.some((o) => o.by.includes("founder"))) rest.unshift({ label: String(founderIdea).trim().slice(0, 60), by: ["founder"], baseline: false });
+  // over the cap: cut from the end, but never the founder's own idea
+  while (rest.length > MAX_OPTIONS - 1) rest.splice(rest.findLastIndex((o) => !o.by.includes("founder")), 1);
+  const list = [...rest, baseline];
+  return { options: list.map((o, i) => ({ id: "ABCDE"[i], label: o.label, by: o.by })), note: m.note || "" };
 }
 
 async function chairCruxes(st) {
@@ -309,7 +387,7 @@ async function runSeat(s, st, round, key, prompt) {
     emit(s, "seat_error", { round, seat: key, error: String(e.message || e) });
     throw e;
   }
-  const parsed = parseCard(text, st.options.map((o) => o.id));
+  const parsed = round === 0 ? parseProposals(text) : parseCard(text, st.options.map((o) => o.id));
   const quotes = checkQuotes(key, text);
   st.cards[round][key] = { text, parsed, quotes };
   emit(s, "seat_done", { round, seat: key, text, parsed, quotes, name: seat.name });
@@ -319,6 +397,7 @@ async function roundAll(s, st, round, promptFn) {
   emit(s, "round_start", { round });
   // stagger starts slightly so speech bubbles open in a ripple around the table
   await Promise.all(st.seats.map((k, i) => new Promise((r) => setTimeout(r, i * 350)).then(() => runSeat(s, st, round, k, promptFn(st, byKey[k])))));
+  if (round === 0) { emit(s, "round_done", { round: 0, scores: null }); return; } // proposals are not scored
   const scores = optionScores(st, round);
   st.scores[round] = scores;
   emit(s, "round_done", { round, scores });
@@ -336,12 +415,15 @@ export function startCouncil(prompt, mode = "full") {
 }
 
 async function run(s) {
-  const st = (s.state = { prompt: s.prompt, mode: s.mode, cards: { 1: {}, 2: {}, 3: {} }, scores: {}, rounds: [] });
+  const st = (s.state = { prompt: s.prompt, mode: s.mode, cards: { 0: {}, 1: {}, 2: {}, 3: {} }, scores: {}, rounds: [] });
   emit(s, "phase", { phase: "setup", label: "The Chair is reading your question" });
   const setup = await chairSetup(st);
+  // The founder named no options: the seats propose them in Round 0 (weights do not depend on them).
+  const optionsOpen = !setup.options_given || !setup.options?.length;
   Object.assign(st, {
     title: setup.title, decision: setup.decision, brief: setup.brief,
-    options: setup.options, assumptions: setup.assumptions,
+    options: optionsOpen ? [] : setup.options, founderIdea: optionsOpen ? setup.founder_idea || "" : "",
+    assumptions: setup.assumptions,
     weights: Object.fromEntries(SEATS.map((x) => [x.key, { weight: 1, reason: "" }])),
   });
   for (const w of setup.weights) st.weights[w.seat] = { weight: Math.max(1, Math.min(3, w.weight)), reason: w.reason };
@@ -349,7 +431,19 @@ async function run(s) {
   if (s.mode === "quick" && st.seats.length < 4) {
     for (const x of SEATS) if (st.seats.length < 4 && !st.seats.includes(x.key)) st.seats.push(x.key);
   }
-  emit(s, "setup", { title: st.title, decision: st.decision, brief: st.brief, options: st.options, assumptions: st.assumptions, weights: st.weights, seats: st.seats, mode: s.mode });
+  emit(s, "setup", { title: st.title, decision: st.decision, brief: st.brief, options: st.options, options_pending: optionsOpen, assumptions: st.assumptions, weights: st.weights, seats: st.seats, mode: s.mode });
+
+  if (optionsOpen) {
+    emit(s, "phase", { phase: "round0", label: "Round 0: the seats propose options" });
+    st.rounds.push(0);
+    await roundAll(s, st, 0, round0Prompt);
+    emit(s, "phase", { phase: "options", label: "The Chair is merging the options" });
+    const merged = await chairOptions(st);
+    st.options = merged.options;
+    st.optionsFromRound0 = true;
+    st.optionsNote = merged.note;
+    emit(s, "options", { options: st.options, note: merged.note });
+  }
 
   emit(s, "phase", { phase: "round1", label: "Round 1: opening positions" });
   st.rounds.push(1);
@@ -432,7 +526,7 @@ export function save(s) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "events.json"), JSON.stringify({ id: s.id, prompt: s.prompt, mode: s.mode, status: s.status, title: st.title, events: s.events }, null, 1));
     if (st.options) {
-      const lines = [`# ${st.title}`, "", `Asked: ${s.prompt}`, "", st.brief, "", "Options:", ...st.options.map((o) => `- ${o.id}: ${o.label}`), "", "Assumptions:", ...(st.assumptions || []).map((a) => `- ${a}`), "", "| Seat | Weight | Reason |", "|---|---|---|", ...SEATS.map((x) => `| ${x.short} | ${st.weights[x.key].weight} | ${st.weights[x.key].reason} |`)];
+      const lines = [`# ${st.title}`, "", `Asked: ${s.prompt}`, "", st.brief, "", st.optionsFromRound0 ? "Options (proposed by the council in Round 0, merged by the Chair):" : "Options:", ...st.options.map((o) => `- ${o.id}: ${o.label}${proposedBy(o)}`), ...(st.optionsNote ? ["", st.optionsNote] : []), "", "Assumptions:", ...(st.assumptions || []).map((a) => `- ${a}`), "", "| Seat | Weight | Reason |", "|---|---|---|", ...SEATS.map((x) => `| ${x.short} | ${st.weights[x.key].weight} | ${st.weights[x.key].reason} |`)];
       fs.writeFileSync(path.join(dir, "brief.md"), lines.join("\n") + "\n");
     }
     for (const r of st.rounds || []) {
@@ -446,11 +540,19 @@ export function save(s) {
   }
 }
 
+/** " (proposed by Bezos, Marks)" for an option that came out of Round 0. */
+function proposedBy(o) {
+  if (!o.by?.length) return "";
+  const names = o.by.map((k) => (k === "founder" ? "the founder" : k === "chair" ? "the Chair, as the baseline" : byKey[k]?.short || k));
+  return ` (proposed by ${names.join(", ")})`;
+}
+
 function verdictMarkdown(st) {
   const v = st.verdict;
   const opt = (id) => st.options.find((o) => o.id === id)?.label || id;
   const L = [];
-  L.push(`# Roast Room: ${st.title}`, "", `${new Date().toISOString().slice(0, 10)} · Seats: ${st.seats.map((k) => byKey[k].short).join(", ")} · Rounds: ${st.rounds.length} · Mode: ${st.mode}`, "");
+  L.push(`# Roast Room: ${st.title}`, "", `${new Date().toISOString().slice(0, 10)} · Seats: ${st.seats.map((k) => byKey[k].short).join(", ")} · Rounds: ${st.rounds.filter((r) => r > 0).length}${st.optionsFromRound0 ? " (plus Round 0 for the options)" : ""} · Mode: ${st.mode}`, "");
+  if (st.optionsFromRound0) L.push("Options: " + st.options.map((o) => `${o.id} ${o.label}${proposedBy(o)}`).join(" · "), "");
   L.push(`## Verdict: ${v.label} (Option ${v.recommended}: ${opt(v.recommended)})`, "", `**The call:** ${v.call}`, "");
   L.push(`Option scores: ${st.options.map((o) => `${o.id} ${v.scores[o.id]?.score ?? "-"}`).join(" · ")}${v.support != null ? ` · Support for the resolution ${v.support}/10` : ""} · Confidence ${v.confidence ?? "-"}/10 · Spread ${v.spread}`);
   if (v.override_note) L.push("", v.override_note);

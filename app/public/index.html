@@ -19,6 +19,7 @@
     </div>
     <ol class="stepper" id="stepper" aria-label="Council progress">
       <li data-step="setup">Brief</li>
+      <li data-step="round0" hidden>Options</li>
       <li data-step="round1">Openings</li>
       <li data-step="cruxes">Fault lines</li>
       <li data-step="round2">Debate</li>
@@ -62,7 +63,7 @@
 
           <form class="composer" id="composer" hidden>
             <h2 data-type>What decision do you need help with?</h2>
-            <textarea id="prompt" rows="3" placeholder="Give them the decision, your options, a few numbers (revenue, cash, team), and which way you're leaning." required minlength="10"></textarea>
+            <textarea id="prompt" rows="3" placeholder="Give them the decision, your options if you have them (leave them out and the council proposes some), a few numbers (revenue, cash, team), and which way you're leaning." required minlength="10"></textarea>
             <div class="samples" id="samples"></div>
             <div class="composer-row">
               <div class="mode" role="radiogroup" aria-label="Council size">

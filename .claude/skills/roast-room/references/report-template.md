@@ -5,7 +5,8 @@ Written by the Chair in plain English. No em dashes. No AI filler: state each po
 ```markdown
 # Roast Room: [decision in a few words]
 
-[date] · Seats: [list] · Rounds: [n] · Mode: [full | quick | named seats]
+[date] · Seats: [list] · Rounds: [n] (plus Round 0 for the options, when it ran) · Mode: [full | quick | named seats]
+[Only when Round 0 ran:] Options: [A] label (proposed by Seat, Seat) · [B] label (proposed by Seat) · [E] label (the Chair's baseline)
 
 ## Verdict: [GO | GO WITH CONDITIONS | RESHAPE | WAIT | DON'T DO IT]
 

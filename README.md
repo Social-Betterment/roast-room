@@ -43,7 +43,7 @@ You also get a short verdict in Claude Code, and the full report lands in `sessi
 The council is only as good as what you give it. Include:
 
 - **The decision** in one line.
-- **Your options.** Two or three. "Keep doing what I do now" counts.
+- **Your options, if you have them.** Two or three. "Keep doing what I do now" counts. No options yet? Leave them out and the advisors propose some first (see "No options" below).
 - **Your numbers.** Revenue, cash, and team size.
 - **Your limits.** Deadline, hours, and budget.
 - **What success looks like**, and by when.
@@ -56,6 +56,15 @@ Left something out? The Chair asks before the council starts. Example:
 Should I raise to $3,500 for everyone, raise for new clients only, or keep $2,000?
 Close rate is about 50% and I have $40k in the bank. Success is $45k a month by March.
 I'm leaning toward raising for everyone because I'm underpaid.
+```
+
+## No options? The council starts with Round 0
+
+You don't have to know your options. Ask an open question ("what should I do about churn?") or name one idea ("should I hire a CFO?") and the council opens with a short **Round 0**. Every advisor proposes three plausible options, including one they wouldn't pick themselves, and doesn't say which they favor. The Chair merges them into a list of three to five: your own idea stays on it, and "keep doing what I do now" is always added. Then the usual rounds debate and score that list. The room shows Round 0 as its own step, with who proposed what.
+
+```
+/roast-room My newsletter has been stuck at 4,000 subscribers for six months and earns $2k a month
+from sponsors. I have about 6 hours a week and $5k. What should I do next?
 ```
 
 More ways to run it:
@@ -76,7 +85,7 @@ Run `npm start`, open http://localhost:4730, and click **Past sessions**. Three 
 - **Each seat scores every option**, weighted by how much that seat's pillar matters to your decision. The Chair caps the verdict when a seat flags ruin risk, and it forces a real argument when everyone agrees too fast.
 - **The room only watches.** As the Chair works, it writes each step to `sessions/`, and the app plays those files back. Between rounds it shows which round is running, how long it has been, and what each advisor is weighing. The room makes no AI calls of its own.
 - **Every council is saved** in `sessions/`. Past sessions replays any of them and downloads its PDF.
-- **Usage:** a full council is 21 sub-agent runs, so it takes a real bite out of your plan's usage. Use `--quick` for small calls.
+- **Usage:** a full council is 21 sub-agent runs (28 when you leave out your options, because the advisors propose them first), so it takes a real bite out of your plan's usage. Use `--quick` for small calls.
 
 ## Optional: let the room run councils itself
 

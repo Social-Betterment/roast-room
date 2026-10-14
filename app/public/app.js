@@ -9,6 +9,7 @@ const SAMPLES = [
   ["First salesperson?", "I'm a solo founder of a B2B SaaS at $25k MRR growing 5% a month. I do every sales call myself (about 20 hours a week) and I'm burning out. Should I hire a full-time account executive at $120k base, hire a part-time commission-only closer, or keep selling myself for six more months? I have $150k in the bank."],
   ["Second product?", "My agency makes $80k a month building AI automations for dentists. A few clients asked for an AI receptionist product. Should I build the receptionist as a separate SaaS, offer it as an add-on to existing clients only, or stay focused on the agency? Team of 6, about $200k cash."],
   ["Quit my job?", "I make $180k a year at a tech company. My side business (a paid newsletter) makes $6k a month and grew 8% a month this year. I have 9 months of expenses saved. Should I quit now, quit in 6 months, or keep both and hire a writer?"],
+  ["No options yet?", "My newsletter has been stuck at about 4,000 subscribers for six months and I make $2k a month from sponsors. I can give it around 6 hours a week and have about $5k to spend. What should I do next? I don't have a plan yet."],
 ];
 
 const EXAMPLE = "I run a coaching business at $30k a month with 15 clients at $2,000 each. Should I raise to $3,500 for everyone, raise for new clients only, or keep $2,000? Close rate is about 50% and I have $40k in the bank. Success is $45k a month by March. I'm leaning toward raising for everyone because I'm underpaid.";
@@ -29,7 +30,7 @@ const GUIDE = `
       <h4>What to put in your question</h4>
       <ul>
         <li><span><b>The decision</b> in one line.</span></li>
-        <li><span><b>Your options.</b> Two or three. "Keep doing what I do now" counts.</span></li>
+        <li><span><b>Your options, if you have them.</b> Two or three. "Keep doing what I do now" counts. No options yet? Leave them out and the advisors propose some first.</span></li>
         <li><span><b>Your numbers.</b> Revenue, cash, and team size.</span></li>
         <li><span><b>Your limits.</b> Deadline, hours, and budget.</span></li>
         <li><span><b>What success looks like</b>, and by when.</span></li>
@@ -49,6 +50,7 @@ const GUIDE = `
       <ul>
         <li><span><b>Full council:</b> 7 advisors, 3 rounds. For big calls that are hard to undo.</span></li>
         <li><span><b>Quick:</b> add <code>--quick</code> for 4 advisors and 2 rounds. Uses far less of your plan.</span></li>
+        <li><span><b>No options given?</b> A short Round 0 comes first. Each advisor proposes plausible options, including ones they would not pick, and the Chair merges them. Then the usual rounds debate and score them.</span></li>
         <li><span><b>Every council is saved.</b> Open Past sessions to replay one or download its PDF.</span></li>
       </ul>
     </div>
@@ -56,11 +58,12 @@ const GUIDE = `
 
 const SHAPES = ["base", "open", "mid", "blink"];
 const portrait = (key, shape = "base") => `/portraits/${key}-${shape}.webp`;
-const ROUND_NAME = ["", "Opening", "Debate", "Vote"];
+const ROUND_NAME = ["Options", "Opening", "Debate", "Vote"];
 
 const state = {
   seats: [], byKey: {}, session: null, options: [], weights: {}, active: [], round: 0,
-  cards: { 1: {}, 2: {}, 3: {} }, replaying: false, verdict: null, links: [], geo: {}, setup: null, wait: null,
+  cards: { 0: {}, 1: {}, 2: {}, 3: {} }, replaying: false, verdict: null, links: [], geo: {}, setup: null, wait: null,
+  pending: false, optionsEv: null,
 };
 
 // ------------------------------------------------------------- boot
@@ -253,8 +256,9 @@ const player = {
 function reset() {
   state.es?.close();
   player.reset();
-  Object.assign(state, { session: null, options: [], weights: {}, active: [], round: 0, cards: { 1: {}, 2: {}, 3: {} }, replaying: false, verdict: null, links: [], speaking: null, setup: null, wait: null });
+  Object.assign(state, { session: null, options: [], weights: {}, active: [], round: 0, cards: { 0: {}, 1: {}, 2: {}, 3: {} }, replaying: false, verdict: null, links: [], speaking: null, setup: null, wait: null, pending: false, optionsEv: null });
   hideWait();
+  $('.stepper li[data-step="round0"]').hidden = true; // only councils that propose their own options have this step
   $("#stage").classList.remove("live");
   $("#topic").hidden = true;
   $("#composer").hidden = state.runner !== "api";
@@ -304,8 +308,8 @@ function attach(id) {
 }
 
 // ------------------------------------------------------------- event handling
-const STEP_OF = { setup: "setup", round1: "round1", cruxes: "cruxes", round2: "round2", draft: "round3", round3: "round3", skip3: "round3", verdict: "verdict" };
-const ORDER = ["setup", "round1", "cruxes", "round2", "round3", "verdict"];
+const STEP_OF = { setup: "setup", round0: "round0", options: "round0", round1: "round1", cruxes: "cruxes", round2: "round2", draft: "round3", round3: "round3", skip3: "round3", verdict: "verdict" };
+const ORDER = ["setup", "round0", "round1", "cruxes", "round2", "round3", "verdict"];
 
 function setStep(step) {
   const idx = ORDER.indexOf(step);
@@ -322,7 +326,7 @@ async function handle(ev) {
       state.wait = { phase: ev.phase, at: ev.at || Date.now() };
       setStep(STEP_OF[ev.phase] || "setup");
       feedPhase(ev.label);
-      const thinking = ["setup", "cruxes", "draft", "verdict"].includes(ev.phase);
+      const thinking = ["setup", "options", "cruxes", "draft", "verdict"].includes(ev.phase);
       if (thinking || ev.phase === "skip3") {
         chairSays(ev.label.replace(/^The Chair is /, "").replace(/^./, (c) => c.toUpperCase()), { dots: thinking });
         await player.sleep(1400);
@@ -333,7 +337,8 @@ async function handle(ev) {
     case "round_start": onRoundStart(ev.round); break;
     case "seat_start": $(`#seat-${ev.seat}`)?.classList.add("thinking"); break;
     case "seat_done": await onSeatDone(ev); break;
-    case "round_done": state.wait = null; updateOptions(ev.scores); break;
+    case "round_done": state.wait = null; if (ev.scores) updateOptions(ev.scores); break; // Round 0 has no scores
+    case "options": state.wait = null; await onOptions(ev); break;
     case "cruxes": await onCruxes(ev); break;
     case "draft": await onDraft(ev.draft); break;
     case "verdict": state.wait = null; onVerdict(ev); break;
@@ -341,15 +346,37 @@ async function handle(ev) {
   }
 }
 
+// who put an option on the table: seat faces, a tag for the founder's own idea or the Chair's baseline
+function byHtml(o) {
+  const by = o.by || [];
+  const faces = by.filter((k) => state.byKey[k]).map((k) => `<img src="${portrait(k)}" alt="${esc(state.byKey[k].short)}" title="Proposed by ${esc(state.byKey[k].short)}">`).join("");
+  const tag = by.includes("founder") ? '<span class="tag">your idea</span>' : by.includes("chair") && !faces ? '<span class="tag">baseline</span>' : "";
+  return faces || tag ? `<span class="by">${faces}${tag}</span>` : "";
+}
+const proposers = (o) => {
+  const names = (o.by || []).map((k) => (k === "founder" ? "your idea" : k === "chair" ? "baseline" : state.byKey[k]?.short)).filter(Boolean);
+  return names.length ? ` <span class="muted">(${esc(names.join(", "))})</span>` : "";
+};
+function renderOptions(options) {
+  $("#options").innerHTML = options.map((o) => `
+    <div class="opt" data-opt="${o.id}"><span class="id">${o.id}</span><span class="label">${esc(o.label)}${byHtml(o)}</span><span class="val">-</span><span class="bar"><i></i></span></div>`).join("");
+}
+// while the council is still proposing options, say so and count the advisors who have
+function pendingOptions() {
+  const n = state.active.length, done = Object.keys(state.cards[0]).length;
+  $("#options").innerHTML = `<div class="opt-pending"><span class="dot"></span><span><b>Options are open.</b> The council proposes them first${done ? ` · ${done} of ${n} in` : ""}.</span></div>`;
+}
+
 function onSetup(ev) {
   state.options = ev.options;
   state.weights = ev.weights;
   state.active = ev.seats;
+  state.pending = Boolean(ev.options_pending);
+  $('.stepper li[data-step="round0"]').hidden = !state.pending;
   $("#topic").hidden = false;
   $("#topicTitle").textContent = ev.title;
   typeIn($("#topicTitle"));
-  $("#options").innerHTML = ev.options.map((o) => `
-    <div class="opt" data-opt="${o.id}"><span class="id">${o.id}</span><span class="label">${esc(o.label)}</span><span class="val">-</span><span class="bar"><i></i></span></div>`).join("");
+  if (state.pending) pendingOptions(); else renderOptions(ev.options);
   for (const s of state.seats) {
     const absent = !ev.seats.includes(s.key);
     $(`#seat-${s.key}`).classList.toggle("absent", absent);
@@ -377,7 +404,22 @@ function onRoundStart(round) {
   state.links = [];
   drawLinks();
   $("#cruxes").hidden = true;
-  chairSays(`${["", "Round 1: opening positions", "Round 2: the debate", "Round 3: the vote"][round]}`, { dots: true, tag: "The floor is open" });
+  chairSays(`${["Round 0: the options", "Round 1: opening positions", "Round 2: the debate", "Round 3: the vote"][round]}`, { dots: true, tag: "The floor is open" });
+}
+
+// the Chair has merged the proposals into the options the council will debate and score
+async function onOptions(ev) {
+  state.options = ev.options;
+  state.optionsEv = ev;
+  state.pending = false;
+  renderOptions(ev.options);
+  $$("#options .opt").forEach((el, i) => { el.style.animation = `rise .5s var(--ease-out) ${i * 0.12}s both`; });
+  chairSays(`On the table: ${ev.options.map((o) => `${o.id}, ${o.label}`).join(". ")}.`, { tag: `${ev.options.length} options` });
+  const f = document.createElement("div");
+  f.className = "feed-note";
+  f.innerHTML = `<b>Options on the table:</b><ul>${ev.options.map((o) => `<li><b>${esc(o.id)}.</b> ${esc(o.label)}${proposers(o)}</li>`).join("")}</ul>${ev.note ? `<p class="muted" style="margin:6px 0 0">${esc(ev.note)}</p>` : ""}`;
+  feedAppend(f);
+  await player.sleep(2200 + 1000 * ev.options.length);
 }
 
 // ------------------------------------------------------------- talking
@@ -392,6 +434,11 @@ function firstSentences(t, max) {
 
 /** The line a seat says out loud: the headline of its card, not the whole card. */
 function lineFor(round, p, max = 170) {
+  if (round === 0) { // the options a seat proposes, spoken as a short list
+    const labels = (p.proposals || []).map((x) => x.label);
+    if (!labels.length) return firstSentences(clean(p.need || ""), max);
+    return shorten(`${labels.length === 1 ? "One option from me" : `${labels.length} options from me`}: ${labels.join("; ")}.`, max + 70);
+  }
   if (round === 1) return firstSentences(clean(p.call || p.stance), max);
   if (round === 2) {
     let t = clean(p.disagreeLine || p.stance);
@@ -493,11 +540,15 @@ function startBlinking() {
 async function onSeatDone(ev) {
   const { round, seat, text, parsed, quotes } = ev;
   state.cards[round][seat] = { text, parsed, quotes };
+  if (round === 0 && state.pending) pendingOptions();
   const s = state.byKey[seat];
   const top = topOption(parsed.optionScores);
   const line = lineFor(round, parsed);
   let tag = ROUND_NAME[round], sub = "", target = null;
-  if (round === 1) {
+  if (round === 0) {
+    const n = parsed.proposals?.length || 0;
+    tag = n ? `Puts ${n} option${n === 1 ? "" : "s"} on the table` : "Options";
+  } else if (round === 1) {
     tag = `${stanceWord(parsed.stance)}${top ? ` · backs ${top.id} (${top.v}/10)` : ""}`;
   } else if (round === 2) {
     const tgt = parsed.disagreeWith ? state.byKey[parsed.disagreeWith] : null;
@@ -530,7 +581,7 @@ async function onSeatDone(ev) {
     stamp.className = `vote ${v}`;
     stamp.textContent = v.toUpperCase();
     $(`#seat-${seat}`).appendChild(stamp);
-  } else chip.textContent = stanceWord(parsed.stance);
+  } else chip.textContent = round === 0 ? "Proposed" : stanceWord(parsed.stance);
   if (top) { const sc = $(".score", pl); sc.hidden = false; sc.textContent = `${top.id} ${top.v}`; sc.title = `Highest score: option ${top.id}`; }
   setSpeaker(null);
   void s;
@@ -612,15 +663,15 @@ function feedCard(round, seat, parsed) {
   d.dataset.round = round;
   const top = topOption(parsed.optionScores);
   const tgt = parsed.disagreeWith ? state.byKey[parsed.disagreeWith]?.short : "";
-  const what = round === 1 ? `${stanceWord(parsed.stance)}${top ? `, backs ${top.id}` : ""}` : round === 2 ? (tgt ? `vs ${tgt}` : "Debate") : `Votes ${parsed.vote || "endorse"}`;
-  d.innerHTML = `<img class="av" src="${portrait(seat)}" alt=""><div><div class="h">${esc(s.short)}<span class="r">${esc(what)}</span></div><p>${esc(lineFor(round, parsed, 105))}</p></div>`;
+  const what = round === 0 ? `Proposes ${parsed.proposals?.length || 0}` : round === 1 ? `${stanceWord(parsed.stance)}${top ? `, backs ${top.id}` : ""}` : round === 2 ? (tgt ? `vs ${tgt}` : "Debate") : `Votes ${parsed.vote || "endorse"}`;
+  d.innerHTML = `<img class="av" src="${portrait(seat)}" alt=""><div><div class="h">${esc(s.short)}<span class="r">${esc(what)}</span></div><p>${esc(lineFor(round, parsed, round === 0 ? 200 : 105))}</p></div>`;
   feedAppend(d);
 }
 
 function openCard(seat, round) {
   const s = state.byKey[seat];
-  const rounds = [3, 2, 1].filter((r) => state.cards[r][seat]);
-  const r = round || rounds[0];
+  const rounds = [3, 2, 1, 0].filter((r) => state.cards[r][seat]);
+  const r = round ?? rounds[0]; // round 0 is a real round, so not ||
   const c = state.cards[r]?.[seat];
   $("#cardBody").innerHTML = `
     <div class="card-head"><img src="${portrait(seat)}" alt=""><div><div class="label">${esc(s.pillar)}</div><h3>${esc(s.name)}</h3><p class="muted" style="margin:0">Owns the question: ${esc(s.question)}</p></div></div>
@@ -662,8 +713,8 @@ function onVerdict(ev) {
     <p class="v-call">${esc(v.call)}</p>
     <div class="v-grid">
       <div class="v-sec"><h3>Scores</h3><div class="v-opts">${state.options.map((o) => `
-        <div class="opt ${o.id === v.recommended ? "lead" : ""}"><span class="id">${o.id}</span><span class="label">${esc(o.label)}</span><span class="val">${v.scores[o.id]?.score ?? "-"}</span><span class="bar"><i style="width:${(v.scores[o.id]?.score || 0) * 10}%"></i></span></div>`).join("")}</div>
-        <p class="v-meta">Confidence ${v.confidence ?? "-"}/10${v.votes ? ` · ${v.votes.endorse || 0} endorse, ${v.votes.amend || 0} amend, ${v.votes.dissent || 0} dissent` : ""}</p>
+        <div class="opt ${o.id === v.recommended ? "lead" : ""}"><span class="id">${o.id}</span><span class="label">${esc(o.label)}${byHtml(o)}</span><span class="val">${v.scores[o.id]?.score ?? "-"}</span><span class="bar"><i style="width:${(v.scores[o.id]?.score || 0) * 10}%"></i></span></div>`).join("")}</div>
+        <p class="v-meta">Confidence ${v.confidence ?? "-"}/10${v.votes ? ` · ${v.votes.endorse || 0} endorse, ${v.votes.amend || 0} amend, ${v.votes.dissent || 0} dissent` : ""}${state.optionsEv ? " · options proposed by the council" : ""}</p>
       </div>
       <div class="v-sec"><h3>Why</h3><ul class="v-why">${v.why.slice(0, 3).map((w) => { const k = seatKey(w.seat); return `<li>${k ? `<img class="av" src="${portrait(k)}" alt="">` : ""}<span>${short(w.point, 150)}</span></li>`; }).join("")}</ul></div>
       <div class="v-sec"><h3>Watch out</h3><div class="minority"><div class="who">${mk ? `<img class="av" src="${portrait(mk)}" alt="">` : ""}${esc(seatName(v.minority.seat))}</div><q>${short(v.minority.quote, 170)}</q></div></div>
@@ -727,6 +778,8 @@ function waitCopy(phase) {
   const n = state.setup?.mode === "quick" ? 2 : 3;
   return {
     setup: ["Setting the table", "The Chair is seating the council.", ""],
+    round0: ["Before round 1", "The advisors are each proposing options for the council to debate.", SAME_TIME],
+    options: ["Between rounds", "The Chair is merging the proposals into the options the council will score.", "The options show up here next, then the openings start."],
     round1: ["Round 1 of " + n, "The advisors are writing their opening positions.", SAME_TIME],
     round2: ["Round 2 of " + n, "The advisors are reading each other's openings and firing back.", SAME_TIME],
     round3: ["Round 3 of " + n, "The advisors are voting on the Chair's proposal.", SAME_TIME],
@@ -769,10 +822,11 @@ function tickWait() {
   $("#wcHead").textContent = head;
   $("#wcSub").textContent = sub;
   $("#wcNudge").hidden = elapsed < 4 * 60 * 1000;
-  const round = Number((w.phase.match(/^round(\d)$/) || [])[1]) || 0;
+  const rm = w.phase.match(/^round(\d)$/);
+  const round = rm ? Number(rm[1]) : null; // 0 is a round too (the options)
   const bar = $("#wcBar").parentElement;
   const muse = $("#wcMuse");
-  if (round) {
+  if (round !== null) {
     const seats = state.active.length ? state.active : state.seats.map((s) => s.key);
     const done = seats.filter((k) => state.cards[round][k]).length;
     bar.classList.toggle("indeterminate", done === 0);
@@ -785,7 +839,7 @@ function tickWait() {
       const s = state.byKey[pending[state.museIdx]];
       muse.classList.add("fade");
       setTimeout(() => {
-        muse.innerHTML = "<b>" + esc(s.short) + "</b> is weighing: " + esc(s.question.replace(/^./, (c) => c.toLowerCase())) + (done ? " · " + done + " of " + seats.length + " in" : "");
+        muse.innerHTML = "<b>" + esc(s.short) + "</b> is " + (round === 0 ? "sketching options around: " : "weighing: ") + esc(s.question.replace(/^./, (c) => c.toLowerCase())) + (done ? " · " + done + " of " + seats.length + " in" : "");
         muse.classList.remove("fade");
         $$(".seat").forEach((el) => el.classList.toggle("musing", el.dataset.seat === s.key));
       }, 300);
@@ -811,14 +865,15 @@ async function savePdf(btn) {
   const old = btn.textContent;
   btn.textContent = "Making PDF...";
   try {
-    let setup = state.setup, verdict = state.verdict;
+    let setup = state.setup, verdict = state.verdict, optionsEv = state.optionsEv;
     if (id) { // a past session from the history list
       const j = await fetch("/api/sessions/" + encodeURIComponent(id)).then((x) => x.json());
       setup = j.events.find((e) => e.type === "setup");
       verdict = [...j.events].reverse().find((e) => e.type === "verdict");
+      optionsEv = j.events.find((e) => e.type === "options"); // set when the council proposed its own options
     }
     if (!setup || !verdict) throw new Error("This council has no verdict yet.");
-    await downloadVerdictPdf({ setup, verdict, byKey: state.byKey, id: id || state.session });
+    await downloadVerdictPdf({ setup, verdict, optionsEv, byKey: state.byKey, id: id || state.session });
   } catch (e) {
     console.error(e);
     toast("Couldn't make the PDF: " + (e.message || e));

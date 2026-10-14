@@ -45,7 +45,7 @@ const dateLine = (id) => {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 };
 
-export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
+export async function downloadVerdictPdf({ setup, verdict: ev, optionsEv, byKey, id }) {
   await loadLib();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "letter", compress: true });
@@ -54,7 +54,7 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
 
   const v = ev.verdict;
   const seats = ev.seats || [];
-  const options = setup.options || [];
+  const options = optionsEv?.options || setup.options || []; // a council that proposed its own options has them in a later event
   const seatKey = (x) => {
     const t = String(x || "").toLowerCase().trim();
     return Object.values(byKey).find((s) => s.key === t.replace(/\s+/g, "") || s.short.toLowerCase() === t || s.name.toLowerCase() === t || t.includes(s.name.split(" ").pop().toLowerCase()))?.key;
@@ -128,7 +128,7 @@ export async function downloadVerdictPdf({ setup, verdict: ev, byKey, id }) {
   y += title.length * 22 * 1.18 + 8;
   const n = seats.length || (setup.seats || []).length;
   const rounds = v.votes ? 3 : 2;
-  para(`${setup.mode === "quick" ? "Quick council" : "Full council"} · ${n} advisors · ${rounds} rounds`, { size: 9.5, color: C.mute, gap: 4 });
+  para(`${setup.mode === "quick" ? "Quick council" : "Full council"} · ${n} advisors · ${rounds} rounds${optionsEv ? " · options proposed by the council" : ""}`, { size: 9.5, color: C.mute, gap: 4 });
   if (setup.decision) para(setup.decision, { size: 10.5, color: C.soft, gap: 8 });
 
   // ---------------------------------------------------------------- the verdict box
